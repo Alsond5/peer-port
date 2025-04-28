@@ -25,7 +25,9 @@ export class Peer {
         this.signaling.onMessage(this.handleSignalingMessage.bind(this));
 
         if (this.isCaller) {
-            this.setupDataChannel(this.connection.createDataChannel('file-transfer'));
+            this.setupDataChannel(this.connection.createDataChannel('file-transfer', {
+                ordered: true
+            }));
         }
     }
 
@@ -110,10 +112,6 @@ export class Peer {
                 case 'candidate':
                     await this.connection.addIceCandidate(new RTCIceCandidate(message.payload));
                     break;
-
-                case 'bye':
-                    this.close();
-                    break;
             }
         } catch (err) {
             this.emit('error', err as Error);
@@ -153,6 +151,9 @@ export class Peer {
     }
 
     close() {
-        console.log("[Peer] Signaling operation completed successfully.")
+        if (this.channel) {
+            this.channel.close();
+        }
+        this.connection.close();
     }
 }

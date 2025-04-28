@@ -1,91 +1,74 @@
 <script lang="ts">
-    import { FileTransfer } from '$lib/webrtc/fileTransfer';
-    import { Peer } from '$lib/webrtc/peer';
-    import { SignalingClient, type SignalingMessage } from '$lib/webrtc/signaling';
-    import { fade, fly } from "svelte/transition";
+    import type { SignalingMessage } from "$lib/webrtc/signaling";
 
-    let selectedFiles: FileList | null = $state(null);
+    import { ConnectionManager } from "$lib/webrtc/connectionManager";
+    import { fade, fly } from "svelte/transition";
+    import { getSignalingURL } from "$lib/webrtc/utils";
+
+    let connectionManager: ConnectionManager | null;
+
+    let isInitFiles: boolean = $state(false);
+    let filesCount: number = $state(0);
     let fileUrl = $state("");
-    let previewUrl = $state("");
     let totalSize = $state(0);
     let dropzone: HTMLLabelElement | null = $state(null);
+    let fileInput: HTMLInputElement | null = $state(null);
     let transferIsStarted: boolean = $state(false);
     let sendProgress: number = $state(0);
+    let showCoppiedMessage: boolean = $state(false);
+
+    const url = getSignalingURL();
     
-    const signaling = new SignalingClient('ws://192.168.1.154:8000/ws');
-    const peer = new Peer(signaling, true);
-
-    signaling.onopen = (event) => {
-        const message: SignalingMessage = {
-            type: "join",
-            payload: {
-                room_id: null
-            }
-        }
-
-        signaling.send(message);
-    }
-
-    signaling.onMessage(async (message) => {
-        if (message.type === "create") {
-            console.log(message);
-
-            fileUrl = `http://192.168.1.154:5173/share/${message.payload.room_id}`;
-            signaling.clientId = message.payload.client_id as string;
-        }
-        
-        else if (message.type === "ready") {
-            signaling.peerId = message.payload.peer_id;
-            await peer.start()
-        }
-    })
-
-    peer.on('open', () => {
-        console.log('DataChannel açık! Dosya gönderebilirsin.');
-
-        const message: SignalingMessage = {
-            type: "bye",
-            payload: {}
-        }
-
-        signaling.send(message);
-
-        if (selectedFiles && selectedFiles.length > 0) {
-            const fileTransfer = new FileTransfer(selectedFiles, peer, (sp: number) => {
-                sendProgress = sp;
-            });
-
-            transferIsStarted = true;
-            fileTransfer.startFileTransfer()
+    $effect(() => {
+        if (showCoppiedMessage) {
+            setTimeout(() => {
+                showCoppiedMessage = false;
+            }, 3000);
         }
     });
 
-    peer.on('message', (buffer) => {
-        console.log('Dosya geldi:', buffer);
-    });
+    const oncreate = (message: SignalingMessage) => {
+        fileUrl = `http://192.168.1.154:5173/share/${message.payload.room_id}`;
+    };
 
-    peer.on('error', (err) => console.error('Peer error', err));
-    peer.on('close', () => console.log('Bağlantı kapandı.'));
-    
+    const onprogressupdate = (sp: number) => {
+        sendProgress = sp;
+    };
+
+    const ontransferstart = () => {
+        transferIsStarted = true;
+    };
+
     function handleFileSelect(event: Event) {
         const input = event.target as HTMLInputElement;
 
         if (input.files && input.files.length > 0) {
-            signaling.connect();
+            const selectedFiles = input.files;
+            connectionManager = new ConnectionManager({
+                url: url,
+                selectedFiles: selectedFiles
+            });
 
-            selectedFiles = input.files;
+            connectionManager.oncreate = oncreate;
+            connectionManager.onprogressupdate = onprogressupdate;
+            connectionManager.ontransferstart = ontransferstart;
 
             let currentTotalSize = 0;
-            if (selectedFiles) {
-                for (let i = 0; i < selectedFiles.length; i++) {
-                    const file = selectedFiles[i];
-                    if (file) {
-                        currentTotalSize += file.size;
-                    }
+
+            for (let i = 0; i < selectedFiles.length; i++) {
+                const file = selectedFiles[i];
+
+                if (file) {
+                    currentTotalSize += file.size;
                 }
             }
 
             totalSize = currentTotalSize;
+            console.log(totalSize)
+            filesCount = selectedFiles.length;
+            isInitFiles = true;
+
+            connectionManager.connect();
         }
     }
 
@@ -103,17 +86,21 @@
         );
     }
 
+    async function copy() {
+        await navigator.clipboard.writeText(fileUrl);
+        showCoppiedMessage = true;
+    }
+
     // Dosya seçimini sıfırlama fonksiyonu
     function resetFileSelection() {
-        signaling.close()
+        connectionManager?.close();
+        connectionManager = null;
 
-        selectedFiles = null;
+        isInitFiles = false;
+        filesCount = 0;
         fileUrl = "";
-        previewUrl = "";
         totalSize = 0;
-        const fileInput = document.getElementById(
-            "dropzone-file",
-        ) as HTMLInputElement;
+
         if (fileInput) fileInput.value = "";
     }
 
@@ -173,7 +160,7 @@
 </script>
 
 <div class="flex items-center justify-center w-full">
-    {#if !selectedFiles}
+    {#if !isInitFiles}
         <!-- Dosya Yükleme Alanı -->
         <label
             for="dropzone-file"
@@ -210,13 +197,14 @@
             </div>
             <input
                 id="dropzone-file"
+                bind:this={fileInput}
                 type="file"
                 class="hidden"
                 multiple
                 onchange={handleFileSelect}
             />
         </label>
-    {:else if transferIsStarted && selectedFiles}
+    {:else if transferIsStarted && isInitFiles}
         <div
             class="w-fit h-64 ml-auto border-2 border-blue-300 rounded-lg bg-white dark:bg-gray-700 p-10 flex items-center transition-all duration-300"
             in:fly={{ y: 20, duration: 400 }}
@@ -256,7 +244,9 @@
                 >
                     <span
                         class="text-center text-xl font-bold text-blue-600 dark:text-blue-500"
-                        >{sendProgress !== 100 ? `${sendProgress}%` : 'Finished'}</span
+                        >{sendProgress !== 100
+                            ? `${sendProgress}%`
+                            : "Finished"}</span
                     >
                 </div>
             </div>
@@ -278,14 +268,14 @@
 
             <!-- Sağ Taraf - Dosya Bilgileri -->
             <div class="w-2/3 py-2 h-36 px-6 flex flex-col">
-                <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center justify-between mb-1">
                     <h3
                         class="font-medium text-lg text-gray-800 dark:text-gray-200 truncate max-w-xs"
                     >
-                        {selectedFiles.length} selected files
+                        {filesCount} selected files
                     </h3>
                     <button
-                        class="text-red-500 hover:text-red-700 transition-colors"
+                        class="flex items-center justify-center text-red-500 bg-white hover:bg-red-50 cursor-pointer size-8 rounded-lg transition-colors"
                         onclick={resetFileSelection}
                         aria-label="cancel"
                     >
@@ -309,26 +299,73 @@
                 <!-- Dosya Detayları -->
                 <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">
                     <span>{formatBytes(totalSize, 2)}</span>
-                    <span class="mx-2">•</span>
-                    <span class="text-green-500">Ready</span>
                 </div>
 
                 <!-- Paylaşım URL'i -->
                 <div class="mt-auto">
-                    <div class="flex items-center w-full">
-                        <input
-                            type="text"
-                            value={fileUrl}
-                            readonly
-                            class="flex-grow p-2 text-xs bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-l text-gray-800 dark:text-gray-200 focus:outline-none"
-                        />
-                        <button
-                            class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-r text-xs transition-colors"
-                            onclick={() =>
-                                navigator.clipboard.writeText(fileUrl)}
+                    <div>
+                        <label
+                            for="hs-trailing-button-add-on-with-icon"
+                            class="sr-only">Url</label
                         >
-                            Kopyala
-                        </button>
+                        <div class="flex rounded-lg">
+                            <input
+                                type="text"
+                                id="hs-trailing-button-add-on-with-icon"
+                                value={fileUrl}
+                                name="hs-trailing-button-add-on-with-icon"
+                                class="py-2.5 sm:py-3 px-4 block w-full border-gray-200 rounded-s-lg text-slate-700 font-medium sm:text-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                                readonly
+                            />
+                            <button
+                                type="button"
+                                class="size-11.5 shrink-0 inline-flex justify-center cursor-pointer items-center border border-blue-200 gap-x-2 text-sm font-semibold rounded-e-md border-l-0 bg-white text-blue-700 hover:bg-blue-50 focus:outline-hidden focus:bg-blue-50 disabled:opacity-50 disabled:pointer-events-none"
+                                onclick={copy}
+                            >
+                                {#if showCoppiedMessage}
+                                    <svg
+                                        class="js-clipboard-success shrink-0 size-3 md:size-3.5 text-blue-600 rotate-6"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="24"
+                                        height="24"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                    >
+                                        <polyline points="20 6 9 17 4 12"
+                                        ></polyline>
+                                    </svg>
+                                {:else}
+                                    <svg
+                                        class="js-clipboard-default shrink-0 size-3 md:size-3.5 group-hover:rotate-6 transition"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="24"
+                                        height="24"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                    >
+                                        <rect
+                                            width="8"
+                                            height="4"
+                                            x="8"
+                                            y="2"
+                                            rx="1"
+                                            ry="1"
+                                        ></rect>
+                                        <path
+                                            d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+                                        ></path>
+                                    </svg>
+                                {/if}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

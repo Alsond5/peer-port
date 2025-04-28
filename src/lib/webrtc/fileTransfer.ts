@@ -8,9 +8,9 @@ export class FileTransfer {
     private selectedFiles: FileList | null = null;
     private peer: Peer | null = null;
     
-    callback: ((sendProgress: number) => void) | null = null
+    callback?: (sendProgress: number) => void
 
-    constructor(selectedFiles: FileList, peer: Peer, callback: (sendProgress: number) => void) {
+    constructor(selectedFiles: FileList, peer: Peer, callback?: (sendProgress: number) => void) {
         this.selectedFiles = selectedFiles;
         this.peer = peer;
 
@@ -104,7 +104,7 @@ export class FileTransfer {
                 // İlerlemeyi hesapla
                 offset += (e.target.result as ArrayBuffer).byteLength;
                 this.sendProgress = Math.min(100, Math.floor((offset / file.size) * 100));
-                if (this.callback !== null) this.callback(this.sendProgress);
+                if (this.callback) this.callback(this.sendProgress);
                 
                 // Daha gönderilecek veri varsa devam et
                 if (offset < file.size) {
@@ -124,8 +124,8 @@ export class FileTransfer {
 export class FileReceiver {
     private receivedFiles: Map<number, { meta: FileMeta, chunks: Uint8Array[], totalBytes: number, receivedBytes: number }> = new Map();
 
-    onupdate: ((receiveProgress: number) => void) | null = null;
-    oncomplete: ((file: File) => void) | null = null;
+    onupdate?: (receiveProgress: number) => void;
+    oncomplete?: (file: File) => void;
 
     constructor() {
         this.onupdate = (progress) => {
@@ -180,7 +180,7 @@ export class FileReceiver {
 
         const progress = Math.min(100, Math.floor((fileRecord.receivedBytes / fileRecord.totalBytes) * 100));
         if (this.onupdate) this.onupdate(progress);
-
+        
         if (fileRecord.totalBytes === fileRecord.receivedBytes) {
             this.reconstructFile(fileId);
         }

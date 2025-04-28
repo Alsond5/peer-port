@@ -1,18 +1,19 @@
 <script lang="ts">
-    import { FileReceiver } from "$lib/webrtc/fileTransfer.js";
-    import { Peer } from "$lib/webrtc/peer";
-    import {
-        SignalingClient,
-        type SignalingMessage,
-    } from "$lib/webrtc/signaling";
+    import { ConnectionManager } from "$lib/webrtc/connectionManager.js";
+    import { type SignalingMessage } from "$lib/webrtc/signaling";
+    import { getSignalingURL } from "$lib/webrtc/utils.js";
     import { fly } from "svelte/transition";
 
     let { data } = $props();
+
+    let connectionManager: ConnectionManager | null;
 
     let receiveProgress = $state(0);
     let isReady = $state(false);
     let isLoading = $state(true);
     let errorMessage = $state("");
+
+    const url = getSignalingURL();
 
     $effect(() => {
         if (errorMessage !== "") {
@@ -22,72 +23,49 @@
         }
     })
 
-    let fileReceiver: FileReceiver | null = null;
-
-    const signaling = new SignalingClient("ws://192.168.1.154:8000/ws");
-    const peer = new Peer(signaling, false);
-
-    signaling.onopen = (event) => {
-        const message: SignalingMessage = {
-            type: "join",
-            payload: {
-                room_id: data.room_id,
-            },
-        };
-
-        signaling.send(message);
+    const onprogressupdate = (sp: number) => {
+        receiveProgress = sp;
     };
 
-    signaling.onMessage((message) => {
-        if (message.type === "join") {
-            signaling.clientId = message.payload.client_id;
-            signaling.peerId = message.payload.peer_id;
+    const onreceivefile = (file: File) => {
+        const link = document.createElement("a");
+        
+        link.href = URL.createObjectURL(file);
+        link.download = file.name;
 
-            isReady = true;
-            isLoading = false;
-        } else if (message.type === "error") {
-            errorMessage = message.payload;
-            isLoading = false;
-        }
-    });
+        document.body.appendChild(link);
+        link.click();
 
-    peer.on("open", () => {
-        console.log("DataChannel açık! Dosya gönderebilirsin.");
-    });
+        document.body.removeChild(link);
+    };
 
-    peer.on("message", (buffer) => {
-        fileReceiver?.startReceivingFiles(buffer);
-    });
+    const onjoin = (message: SignalingMessage) => {
+        isReady = true;
+        isLoading = false;
+    }
 
-    peer.on("error", (err) => console.error("Peer error", err));
-    peer.on("close", () => console.log("Bağlantı kapandı."));
+    const onerror = (message: SignalingMessage) => {
+        errorMessage = message.payload;
+        isLoading = false;
+    }
 
     $effect(() => {
-        fileReceiver = new FileReceiver();
-        fileReceiver.onupdate = (rp: number) => {
-            receiveProgress = rp;
-        };
-        fileReceiver.oncomplete = (file: File) => {
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(file);
-            link.download = file.name;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        };
+        connectionManager = new ConnectionManager({
+            url: url,
+            role: "receive",
+            room_id: data.room_id
+        });
 
-        signaling.connect();
+        connectionManager.onprogressupdate = onprogressupdate;
+        connectionManager.onreceivefile = onreceivefile;
+        connectionManager.onjoin = onjoin;
+        connectionManager.onerror = onerror;
+
+        connectionManager.connect();
     });
 
     const startFileTransfer = () => {
-        const message: SignalingMessage = {
-            type: "ready",
-            payload: {
-                peer_id: signaling.clientId,
-            }
-        };
-
-        signaling.send(message);
+        connectionManager?.readyToFileReceive();
     };
 </script>
 
