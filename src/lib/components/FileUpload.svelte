@@ -28,7 +28,9 @@
     });
 
     const oncreate = (message: SignalingMessage) => {
-        fileUrl = `http://192.168.1.154:5173/share/${message.payload.room_id}`;
+        const hostname = window.location.hostname;
+        
+        fileUrl = `https://${hostname}/share/${message.payload.room_id}`;
     };
 
     const onprogressupdate = (sp: number) => {
