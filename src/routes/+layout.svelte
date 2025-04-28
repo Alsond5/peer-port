@@ -12,10 +12,11 @@
 			class="flex flex-nowrap basis-full items-center w-full lg:max-w-[90rem] mx-auto px-4 md:px-8"
 		>
 			<a
-				class="flex-none font-bold text-gray-800 sm:text-lg dark:text-white focus:outline-hidden focus:opacity-80"
+				class="flex items-center flex-none font-bold text-gray-800 sm:text-lg dark:text-white focus:outline-hidden focus:opacity-80"
 				href="../index.html"
 			>
 				PeerPort
+				<span class="block ml-2 text-xs text-white bg-blue-500 py-1 px-1.5 font-bold rounded h-fit">BETA</span>
 			</a>
 
 			<div
