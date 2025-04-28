@@ -181,8 +181,6 @@ export class FileReceiver {
         const progress = Math.min(100, Math.floor((fileRecord.receivedBytes / fileRecord.totalBytes) * 100));
         if (this.onupdate) this.onupdate(progress);
 
-        console.log(fileId, fileRecord.receivedBytes, fileRecord.totalBytes)
-
         if (fileRecord.totalBytes === fileRecord.receivedBytes) {
             this.reconstructFile(fileId);
         }
@@ -199,10 +197,7 @@ export class FileReceiver {
 
         console.log(`Dosya alındı: ${file.name}, Boyut: ${file.size} bytes`);
 
-        if (this.oncomplete) {
-            console.log("GİRDİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİ")
-            this.oncomplete(file)
-        };
+        if (this.oncomplete) this.oncomplete(file);
 
         this.receivedFiles.delete(fileId);
     }

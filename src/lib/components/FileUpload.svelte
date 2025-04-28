@@ -27,31 +27,28 @@
     }
 
     signaling.onMessage(async (message) => {
-        if (message.type === "ready") {
+        if (message.type === "create") {
             console.log(message);
 
-            fileUrl = `https://localhost:5173/share/${message.payload.room_id}`;
-
-            let currentTotalSize = 0;
-            if (selectedFiles) {
-                for (let i = 0; i < selectedFiles.length; i++) {
-                    const file = selectedFiles[i];
-                    if (file) {
-                        currentTotalSize += file.size;
-                    }
-                }
-            }
-
-            totalSize = currentTotalSize;
+            fileUrl = `http://192.168.1.154:5173/share/${message.payload.room_id}`;
+            signaling.clientId = message.payload.client_id as string;
         }
         
-        else if (message.type === "join") {
+        else if (message.type === "ready") {
+            signaling.peerId = message.payload.peer_id;
             await peer.start()
         }
     })
 
     peer.on('open', () => {
         console.log('DataChannel açık! Dosya gönderebilirsin.');
+
+        const message: SignalingMessage = {
+            type: "bye",
+            payload: {}
+        }
+
+        signaling.send(message);
 
         if (selectedFiles && selectedFiles.length > 0) {
             const fileTransfer = new FileTransfer(selectedFiles, peer, (sp: number) => {
@@ -77,6 +74,18 @@
             signaling.connect();
 
             selectedFiles = input.files;
+
+            let currentTotalSize = 0;
+            if (selectedFiles) {
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    const file = selectedFiles[i];
+                    if (file) {
+                        currentTotalSize += file.size;
+                    }
+                }
+            }
+
+            totalSize = currentTotalSize;
         }
     }
 

@@ -1,7 +1,7 @@
 // lib/webrtc/signaling.ts
 
 export type SignalingMessage = {
-    type: "join" | 'offer' | 'answer' | 'candidate' | 'ready' | 'bye';
+    type: "join" | "create" | 'offer' | 'answer' | 'candidate' | 'ready' | 'bye' | "error";
     payload: any;
 };
 
@@ -10,9 +10,10 @@ type Listener = (message: SignalingMessage) => void;
 export class SignalingClient {
     private socket: WebSocket | null = null;
     private url: string;
-    private reconnectInterval = 3000; // ms
     private listeners: Set<Listener> = new Set();
-    private manuallyClosed = false;
+    
+    clientId: string = "";
+    peerId: string = "";
 
     onopen: ((event: Event) => void) | null = null;
 
@@ -40,9 +41,6 @@ export class SignalingClient {
     
     private handleClose = (event: CloseEvent) => {
         console.warn('[Signaling] Connection closed', event.reason);
-        if (!this.manuallyClosed) {
-            setTimeout(() => this.connect(), this.reconnectInterval);
-        }
     };
     
     private handleError = (event: Event) => {
@@ -55,7 +53,6 @@ export class SignalingClient {
             return; // Already connecting or connected
         }
 
-        this.manuallyClosed = false;
         this.socket = new WebSocket(this.url);
 
         this.socket.onopen = this.handleOpen;
@@ -81,8 +78,6 @@ export class SignalingClient {
     }
 
     close() {
-        this.manuallyClosed = true;
-
         if (this.socket) {
             this.socket.removeEventListener('open', this.handleOpen);
             this.socket.removeEventListener('message', this.handleMessage);
