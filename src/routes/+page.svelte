@@ -251,7 +251,7 @@
             <a
                 aria-label="GitHub"
                 class="size-8 inline-flex justify-center items-center gap-x-2 text-sm font-semibold rounded-full border border-transparent text-gray-500 hover:bg-gray-50 focus:outline-hidden focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:text-neutral-400 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700"
-                href="https://github.com/Alsond5/peer-node"
+                href="https://github.com/Alsond5/peer-port"
             >
                 <svg
                     class="shrink-0 size-3.5"

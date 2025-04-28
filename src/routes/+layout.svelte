@@ -13,7 +13,7 @@
 		>
 			<a
 				class="flex items-center flex-none font-bold text-gray-800 sm:text-lg dark:text-white focus:outline-hidden focus:opacity-80"
-				href="../index.html"
+				href="/"
 			>
 				PeerPort
 				<span class="block ml-2 text-xs text-white bg-blue-500 py-1 px-1.5 font-bold rounded h-fit">BETA</span>
@@ -65,7 +65,7 @@
 					</p>
 					<a
 						class="py-1.5 px-2.5 md:py-2 md:px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-full border-2 border-white text-white hover:border-white/70 hover:text-white/70 focus:outline-hidden focus:border-white/70 focus:text-white/70 disabled:opacity-50 disabled:pointer-events-none"
-						href="https://github.com/Alsond5/peer-node"
+						href="https://github.com/Alsond5/peer-port"
 					>
 						GitHub
 						<svg
