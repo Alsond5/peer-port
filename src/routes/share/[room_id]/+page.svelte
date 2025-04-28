@@ -106,7 +106,7 @@
     <!-- End Toast -->
 </div>
 
-<div class="flex flex-col grow items-center justify-center w-full mt-20">
+<div class="flex flex-col grow items-center justify-center w-full">
     <div
         class="w-fit h-64 border-2 border-blue-300 rounded-lg bg-white dark:bg-gray-700 p-10 flex items-center transition-all duration-300"
         in:fly={{ y: 20, duration: 400 }}
