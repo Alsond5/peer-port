@@ -25,7 +25,7 @@
 <div class="max-w-[90rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
     <!-- Grid -->
     <div class="md:grid md:grid-cols-2 md:items-center md:gap-12 xl:gap-32">
-        <div class="flex items-center justify-center {position === 'right' ? 'md:order-2' : 'md:order-1'} bg-blue-50 rounded-3xl w-120 h-120 p-10">
+        <div class="flex items-center justify-center {position === 'right' ? 'md:order-2' : 'md:order-1'} bg-blue-50 rounded-3xl p-10">
             <img
                 class="rounded-xl max-w-full max-h-full object-contain"
                 src={image_url}
