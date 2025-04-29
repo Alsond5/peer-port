@@ -15,16 +15,16 @@ export class SignalingClient {
     clientId: string = "";
     peerId: string = "";
 
-    onopen: ((event: Event) => void) | null = null;
+    onopen?: (event: Event) => void;
+    onerror?: (event: Event) => void;
 
     constructor(url: string) {
         this.url = url;
     }
 
     private handleOpen = (event: Event) => {
-        if (this.onopen !== null) {
-            this.onopen(event);
-        }
+        if (this.onopen) this.onopen(event);
+        
         console.log('[Signaling] Connected');
     };
     
@@ -46,6 +46,8 @@ export class SignalingClient {
     private handleError = (event: Event) => {
         console.error('[Signaling] Error occurred', event);
         this.socket?.close();
+
+        if (this.onerror) this.onerror(event);
     };
 
     connect() {

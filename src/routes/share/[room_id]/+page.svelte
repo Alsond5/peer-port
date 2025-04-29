@@ -65,6 +65,20 @@
         connectionManager?.readyToFileReceive();
         isReady = false;
     };
+
+    const saveAll = () => {
+        receivedFiles.forEach((file) => {
+            const link = document.createElement("a");
+        
+            link.href = URL.createObjectURL(file);
+            link.download = file.name;
+
+            document.body.appendChild(link);
+            link.click();
+
+            document.body.removeChild(link);
+        });
+    }
 </script>
 
 <div class="fixed z-100 right-0 top-0 p-5">
@@ -207,6 +221,7 @@
                                 <button
                                     type="button"
                                     class="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
+                                    onclick={saveAll}
                                 >
                                     Save all
                                 </button>
@@ -308,9 +323,9 @@
                                             <div
                                                 class="hs-dropdown [--placement:bottom-right] relative ml-auto inline-block"
                                             >
-                                                <button type="button" class="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-500 text-white hover:bg-blue-600 focus:outline-hidden focus:bg-blue-600 disabled:opacity-50 disabled:pointer-events-none">
+                                                <a href={URL.createObjectURL(file)} download={file.name} type="button" class="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-500 text-white hover:bg-blue-600 focus:outline-hidden focus:bg-blue-600 disabled:opacity-50 disabled:pointer-events-none">
                                                     Save
-                                                </button>
+                                                </a>
                                             </div>
                                         </div>
                                     </td>

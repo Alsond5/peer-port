@@ -22,6 +22,7 @@ export class ConnectionManager {
     oncreate?: (message: SignalingMessage) => void;
     onjoin?: (message: SignalingMessage) => void;
     onerror?: (message: SignalingMessage) => void;
+    onsocketerror?: (event: Event) => void;
     onprogressupdate?: (sp: number) => void;
     ontransferstart?: () => void
     onreceivefile?: (file: File) => void;
@@ -54,6 +55,10 @@ export class ConnectionManager {
             this.signaling?.send(message);
         }
 
+        this.signaling.onerror = (event) => {
+            if (this.onsocketerror) this.onsocketerror(event);
+        }
+
         this.signaling.onMessage(async (message) => {
             if (!this.signaling) return;
 
@@ -83,7 +88,7 @@ export class ConnectionManager {
                 if (!this.signaling || !this.peer) return;
                 
                 this.signaling.peerId = message.payload.peer_id;
-                await this.peer.start()
+                await this.peer.start();
             }
         })
     }

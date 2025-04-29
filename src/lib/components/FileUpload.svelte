@@ -63,6 +63,12 @@
         errorMessage = message.payload;
     }
 
+    const onsocketerror = (event: Event) => {
+        errorMessage = "A connection error occurred. Please try again.";
+
+        resetFileSelection()
+    }
+
     function handleFileSelect(event: Event) {
         const input = event.target as HTMLInputElement;
 
@@ -77,6 +83,7 @@
             connectionManager.onprogressupdate = onprogressupdate;
             connectionManager.ontransferstart = ontransferstart;
             connectionManager.onerror = onerror;
+            connectionManager.onsocketerror = onsocketerror;
 
             let currentTotalSize = 0;
 
@@ -184,7 +191,7 @@
     }
 </script>
 
-<div class="absolute right-0 bottom-10">
+<div class="fixed z-100 p-5 right-0 top-0">
     <!-- Toast -->
     <div
         class="max-w-xs bg-white border border-gray-200 rounded-xl shadow-lg dark:bg-neutral-800 dark:border-neutral-700"
@@ -222,7 +229,7 @@
 </div>
 
 <div class="flex items-center justify-center w-full">
-    {#if !isInitFiles}
+    {#if !isInitFiles || fileUrl === ""}
         <!-- Dosya Yükleme Alanı -->
         <label
             for="dropzone-file"
