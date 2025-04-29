@@ -13,6 +13,7 @@ type ConnParams = {
 export class ConnectionManager {
     private signaling: SignalingClient | null = null;
     private fileReceiver: FileReceiver | null = null;
+    private fileTransfer: FileTransfer | null = null;
     private peer: Peer | null = null;
     private _selectedFiles?: FileList;
     private _role: Role = "transfer";
@@ -93,7 +94,12 @@ export class ConnectionManager {
         this.peer.on('open', () => {
             if (!this.signaling || !this.peer) return;
 
-            if (this._role === "transfer") this.startFileTransfer();
+            if (this._role === "transfer") {
+                if (!this._selectedFiles || this._selectedFiles.length <= 0) return;
+
+                if (!this.fileTransfer) this.fileTransfer = new FileTransfer(this._selectedFiles, this.peer, this.onprogressupdate);
+                this.startFileTransfer();
+            }
             else this.fileReceiver = this.createFileReceiver();
         });
     
@@ -104,7 +110,9 @@ export class ConnectionManager {
         }
     
         this.peer.on('error', (err) => console.error('Peer error', err));
-        this.peer.on('close', () => console.log('Bağlantı kapandı.'));
+        this.peer.on('close', () => {
+            this.fileTransfer?.pause();
+        });
     }
 
     private sendByeMessage() {
@@ -121,12 +129,8 @@ export class ConnectionManager {
 
         this.sendByeMessage();
 
-        if (this._selectedFiles && this._selectedFiles.length > 0) {
-            const fileTransfer = new FileTransfer(this._selectedFiles, this.peer, this.onprogressupdate);
-            if (this.ontransferstart) this.ontransferstart();
-            
-            fileTransfer.startFileTransfer();
-        }
+        if (this.ontransferstart) this.ontransferstart();
+        this.fileTransfer!.startFileTransfer();
     }
 
     private createFileReceiver() {
@@ -155,6 +159,18 @@ export class ConnectionManager {
         };
 
         this.signaling.send(message);
+    }
+
+    pause() {
+        if (this._role === "transfer") {
+            this.fileTransfer?.pause();
+        }
+    }
+
+    resume() {
+        if (this._role === "transfer") {
+            this.fileTransfer?.resume();
+        }
     }
 
     close() {

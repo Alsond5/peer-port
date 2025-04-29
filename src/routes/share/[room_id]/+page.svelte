@@ -1,7 +1,7 @@
 <script lang="ts">
     import { ConnectionManager } from "$lib/webrtc/connectionManager.js";
     import { type SignalingMessage } from "$lib/webrtc/signaling";
-    import { getSignalingURL } from "$lib/webrtc/utils.js";
+    import { formatBytes, getSignalingURL } from "$lib/webrtc/utils.js";
     import { fly } from "svelte/transition";
 
     let { data } = $props();
@@ -12,48 +12,41 @@
     let isReady = $state(false);
     let isLoading = $state(true);
     let errorMessage = $state("");
+    let receivedFiles = $state<File[]>([]);
 
     const url = getSignalingURL();
 
     $effect(() => {
         if (errorMessage !== "") {
             setTimeout(() => {
-                errorMessage = ""
+                errorMessage = "";
             }, 3000);
         }
-    })
+    });
 
     const onprogressupdate = (sp: number) => {
         receiveProgress = sp;
     };
 
     const onreceivefile = (file: File) => {
-        const link = document.createElement("a");
-        
-        link.href = URL.createObjectURL(file);
-        link.download = file.name;
-
-        document.body.appendChild(link);
-        link.click();
-
-        document.body.removeChild(link);
+        receivedFiles.push(file);
     };
 
     const onjoin = (message: SignalingMessage) => {
         isReady = true;
         isLoading = false;
-    }
+    };
 
     const onerror = (message: SignalingMessage) => {
         errorMessage = message.payload;
         isLoading = false;
-    }
+    };
 
     $effect(() => {
         connectionManager = new ConnectionManager({
             url: url,
             role: "receive",
-            room_id: data.room_id
+            room_id: data.room_id,
         });
 
         connectionManager.onprogressupdate = onprogressupdate;
@@ -62,14 +55,19 @@
         connectionManager.onerror = onerror;
 
         connectionManager.connect();
+
+        return () => {
+            connectionManager?.close();
+        };
     });
 
     const startFileTransfer = () => {
         connectionManager?.readyToFileReceive();
+        isReady = false;
     };
 </script>
 
-<div class="absolute right-0 bottom-10">
+<div class="fixed z-100 right-0 top-0 p-5">
     <!-- Toast -->
     <div
         class="max-w-xs bg-white border border-gray-200 rounded-xl shadow-lg dark:bg-neutral-800 dark:border-neutral-700"
@@ -98,7 +96,7 @@
                     id="hs-toast-error-example-label"
                     class="text-sm text-gray-700 dark:text-neutral-400"
                 >
-                    { errorMessage }
+                    {errorMessage}
                 </p>
             </div>
         </div>
@@ -106,12 +104,12 @@
     <!-- End Toast -->
 </div>
 
-<div class="flex flex-col grow items-center justify-center w-full">
+<div class="flex max-w-[90rem] px-4 py-10 mx-auto sm:px-6 lg:px-8 lg:py-14 flex-col items-center w-full">
     <div
-        class="w-fit h-64 border-2 border-blue-300 rounded-lg bg-white dark:bg-gray-700 p-10 flex items-center transition-all duration-300"
+        class="w-fit border-2 border-blue-300 rounded-lg bg-white dark:bg-gray-700 p-8 flex items-center transition-all duration-300"
         in:fly={{ y: 20, duration: 400 }}
     >
-        <div class="relative size-40">
+        <div class="relative size-38">
             <svg
                 class="size-full -rotate-90"
                 viewBox="0 0 36 36"
@@ -154,7 +152,7 @@
         </div>
     </div>
 
-    <div class="mt-12 w-62">
+    <div class="mt-8 w-55">
         <button
             type="button"
             onclick={startFileTransfer}
@@ -169,7 +167,7 @@
                 >
                     <span class="sr-only">Loading...</span>
                 </span>
-            {:else if !isLoading && !isReady}
+            {:else if errorMessage !== ""}
                 Error
             {:else}
                 Start
@@ -177,3 +175,171 @@
         </button>
     </div>
 </div>
+
+<!-- Table Section -->
+<div class="max-w-[90rem] w-full px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
+    <!-- Card -->
+    <div class="flex flex-col">
+        <div class="-m-1.5 overflow-x-auto">
+            <div class="p-1.5 min-w-full inline-block align-middle">
+                <div
+                    class="bg-white border border-gray-200 rounded-xl shadow-2xs overflow-hidden dark:bg-neutral-900 dark:border-neutral-700"
+                >
+                    <!-- Header -->
+                    <div
+                        class="px-6 py-4 grid gap-3 md:flex md:justify-between md:items-center border-b border-gray-200 dark:border-neutral-700"
+                    >
+                        <div>
+                            <h2
+                                class="text-xl font-semibold text-gray-800 dark:text-neutral-200"
+                            >
+                                Received Files
+                            </h2>
+                            <p
+                                class="text-sm text-gray-600 dark:text-neutral-400"
+                            >
+                                List of all received files and save
+                            </p>
+                        </div>
+
+                        <div>
+                            <div class="inline-flex">
+                                <button
+                                    type="button"
+                                    class="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
+                                >
+                                    Save all
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- End Header -->
+
+                    <!-- Table -->
+                    <table
+                        class="min-w-full divide-y divide-gray-200 dark:divide-neutral-700"
+                    >
+                        <thead class="bg-gray-50 dark:bg-neutral-800">
+                            <tr>
+                                <th
+                                    scope="col"
+                                    class="px-6 py-3 text-start"
+                                >
+                                    <p
+                                        class="group inline-flex items-center gap-x-2 text-xs font-semibold uppercase text-gray-800 hover:text-gray-500 focus:outline-hidden focus:text-gray-500 dark:text-neutral-200 dark:hover:text-neutral-500 dark:focus:text-neutral-500"
+                                    >
+                                        File Name
+                                        <svg
+                                            class="shrink-0 size-3.5 text-gray-800 dark:text-neutral-200"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="24"
+                                            height="24"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            ><path d="m7 15 5 5 5-5" /><path
+                                                d="m7 9 5-5 5 5"
+                                            /></svg
+                                        >
+                                    </p>
+                                </th>
+
+                                <th
+                                    scope="col"
+                                    class="px-6 py-3 text-start"
+                                >
+                                    <p
+                                        class="group inline-flex items-center gap-x-2 text-xs font-semibold uppercase text-gray-800 hover:text-gray-500 focus:outline-hidden focus:text-gray-500 dark:text-neutral-200 dark:hover:text-neutral-500 dark:focus:text-neutral-500"
+                                    >
+                                        Size
+                                        <svg
+                                            class="shrink-0 size-3.5 text-gray-800 dark:text-neutral-200"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="24"
+                                            height="24"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            ><path d="m7 15 5 5 5-5" /><path
+                                                d="m7 9 5-5 5 5"
+                                            /></svg
+                                        >
+                                    </p>
+                                </th>
+
+                                <th scope="col" class="px-6 py-3 text-end"
+                                ></th>
+                            </tr>
+                        </thead>
+
+                        <tbody
+                            class="divide-y divide-gray-200 dark:divide-neutral-700"
+                        >
+                            {#each receivedFiles as file}
+                                <tr
+                                    class="bg-white hover:bg-gray-50 dark:bg-neutral-900 dark:hover:bg-neutral-800"
+                                >
+                                    <th scope="row" class="size-px whitespace-nowrap text-start">
+                                        <div class="block relative z-10">
+                                            <div class="px-6 py-2">
+                                                <div
+                                                    class="block text-blue-500 dark:text-blue-300"
+                                                >
+                                                    <p class="text-sm">{file.name}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    
+                                    <td class="size-px whitespace-nowrap">
+                                        <p class="block text-sm text-gray-800 relative z-10">
+                                            {formatBytes(file.size)}
+                                        </p>
+                                    </td>
+
+                                    <td class="size-px whitespace-nowrap">
+                                        <div class="flex px-6 py-2">
+                                            <div
+                                                class="hs-dropdown [--placement:bottom-right] relative ml-auto inline-block"
+                                            >
+                                                <button type="button" class="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-500 text-white hover:bg-blue-600 focus:outline-hidden focus:bg-blue-600 disabled:opacity-50 disabled:pointer-events-none">
+                                                    Save
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {/each}
+                        </tbody>
+                    </table>
+                    <!-- End Table -->
+
+                    <!-- Footer -->
+                    <div
+                        class="px-6 py-4 grid gap-3 md:flex md:justify-between md:items-center border-t border-gray-200 dark:border-neutral-700"
+                    >
+                        <div>
+                            <p
+                                class="text-sm text-gray-600 dark:text-neutral-400"
+                            >
+                                <span
+                                    class="font-semibold text-gray-800 dark:text-neutral-200"
+                                    >{receivedFiles.length}</span
+                                > files
+                            </p>
+                        </div>
+                    </div>
+                    <!-- End Footer -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Card -->
+</div>
+<!-- End Table Section -->

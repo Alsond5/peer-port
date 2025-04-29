@@ -16,6 +16,8 @@ export class Peer {
     private signaling: SignalingClient;
     private eventListeners: Partial<{ [K in keyof PeerEvents]: Set<EventHandler<K>> }> = {};
     private isCaller: boolean;
+    
+    isPaused = true;
 
     constructor(signaling: SignalingClient, isCaller: boolean) {
         this.signaling = signaling;

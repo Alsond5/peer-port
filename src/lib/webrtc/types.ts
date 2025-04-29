@@ -4,6 +4,6 @@ type FileMeta = {
     type: string;
     size: number;
     lastModified: number;
-    index: number;
     total: number;
+    totalSize: number;
 };

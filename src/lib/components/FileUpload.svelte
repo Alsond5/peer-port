@@ -2,8 +2,8 @@
     import type { SignalingMessage } from "$lib/webrtc/signaling";
 
     import { ConnectionManager } from "$lib/webrtc/connectionManager";
-    import { fade, fly } from "svelte/transition";
-    import { getSignalingURL } from "$lib/webrtc/utils";
+    import { fade, fly, scale } from "svelte/transition";
+    import { formatBytes, getSignalingURL } from "$lib/webrtc/utils";
 
     let connectionManager: ConnectionManager | null;
 
@@ -17,6 +17,8 @@
     let sendProgress: number = $state(0);
     let showCoppiedMessage: boolean = $state(false);
     let errorMessage = $state("");
+    let isPaused = $state(false);
+    let isCompleted = $state(false);
 
     const url = getSignalingURL();
     
@@ -33,6 +35,13 @@
             setTimeout(() => {
                 errorMessage = ""
             }, 3000);
+        }
+    })
+    
+    $effect(() => {
+        if (sendProgress === 100) {
+            console.log("Effect girdi")
+            isCompleted = true;
         }
     })
 
@@ -88,18 +97,14 @@
         }
     }
 
-    function formatBytes(bytes: number, decimals = 2): string {
-        if (bytes === 0) return "0 Bytes";
+    function pause() {
+        connectionManager?.pause();
+        isPaused = true;
+    }
 
-        const k = 1024;
-        const dm = decimals < 0 ? 0 : decimals;
-        const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
-
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-        return (
-            parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i]
-        );
+    function resume() {
+        connectionManager?.resume();
+        isPaused = false;
     }
 
     async function copy() {
@@ -116,6 +121,10 @@
         filesCount = 0;
         fileUrl = "";
         totalSize = 0;
+        isPaused = false;
+        isCompleted = false;
+        sendProgress = 0;
+        transferIsStarted = false;
 
         if (fileInput) fileInput.value = "";
     }
@@ -259,7 +268,7 @@
         </label>
     {:else if transferIsStarted && isInitFiles}
         <div
-            class="w-fit h-64 ml-auto border-2 border-blue-300 rounded-lg bg-white dark:bg-gray-700 p-10 flex items-center transition-all duration-300"
+            class="flex-col w-fit lg:ml-auto border-2 border-blue-300 rounded-lg bg-white dark:bg-gray-700 py-8 px-10 flex items-center transition-all duration-300"
             in:fly={{ y: 20, duration: 400 }}
         >
             <div class="relative size-40">
@@ -303,16 +312,31 @@
                     >
                 </div>
             </div>
+            <div class="mt-5 w-full">
+                {#if isCompleted}
+                    <button onclick={resetFileSelection} type="button" class="flex items-center justify-center cursor-pointer w-full py-2 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-red-100 text-red-800 hover:bg-red-200 focus:outline-hidden focus:bg-red-200 disabled:opacity-50 disabled:pointer-events-none dark:text-red-500 dark:bg-red-800/30 dark:hover:bg-red-800/20 dark:focus:bg-red-800/20">
+                        Close
+                    </button>
+                {:else if !isPaused}
+                    <button onclick={pause} type="button" class="flex items-center justify-center cursor-pointer w-full py-2 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-100 text-blue-800 hover:bg-blue-200 focus:outline-hidden focus:bg-blue-200 disabled:opacity-50 disabled:pointer-events-none dark:text-blue-400 dark:bg-blue-800/30 dark:hover:bg-blue-800/20 dark:focus:bg-blue-800/20">
+                        Pause
+                    </button>
+                {:else}
+                    <button onclick={resume} type="button" class="flex items-center justify-center cursor-pointer w-full py-2 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-100 text-blue-800 hover:bg-blue-200 focus:outline-hidden focus:bg-blue-200 disabled:opacity-50 disabled:pointer-events-none dark:text-blue-400 dark:bg-blue-800/30 dark:hover:bg-blue-800/20 dark:focus:bg-blue-800/20">
+                        Resume
+                    </button>
+                {/if}
+            </div>
         </div>
     {:else}
         <!-- Dosya Bilgisi ve QR Kod Gösterimi -->
         <div
-            class="w-full h-64 border-2 border-blue-300 rounded-lg bg-white dark:bg-gray-700 p-4 flex items-center transition-all duration-300"
+            class="flex flex-col lg:flex-row w-full gap-3 border-2 border-blue-300 rounded-lg bg-white dark:bg-gray-700 p-2 lg:p-4 flex items-center transition-all duration-300"
             in:fly={{ y: 20, duration: 400 }}
         >
             <!-- Sol Taraf - QR Kod -->
             <div
-                class="w-1/3 flex items-center justify-center p-2 border-r border-gray-200 dark:border-gray-600"
+                class="w-full lg:w-1/3 flex items-center justify-center p-2 border-b lg:border-r lg:border-b-0 border-gray-200 dark:border-gray-600"
             >
                 <div class="bg-white p-2 rounded">
                     {@html generateQRCode(fileUrl)}
@@ -320,7 +344,7 @@
             </div>
 
             <!-- Sağ Taraf - Dosya Bilgileri -->
-            <div class="w-2/3 py-2 h-36 px-6 flex flex-col">
+            <div class="w-full lg:w-2/3 p-2 flex flex-col">
                 <div class="flex items-center justify-between mb-1">
                     <h3
                         class="font-medium text-lg text-gray-800 dark:text-gray-200 truncate max-w-xs"

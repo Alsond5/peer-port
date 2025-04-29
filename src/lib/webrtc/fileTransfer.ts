@@ -7,6 +7,13 @@ export class FileTransfer {
 
     private selectedFiles: FileList | null = null;
     private peer: Peer | null = null;
+
+    private totalSize: number = 0;
+    private transferedBytes: number = 0;
+    private currentOffset = 0;
+    private currentReader: FileReader | null = null;
+
+    isPaused = false;
     
     callback?: (sendProgress: number) => void
 
@@ -20,8 +27,21 @@ export class FileTransfer {
     // Dosya gönderme işlemini başlat
     startFileTransfer() {
         if (!this.selectedFiles || this.selectedFiles.length === 0) return;
+
+        let currentTotalSize = 0;
+
+        for (let i = 0; i < this.selectedFiles.length; i++) {
+            const file = this.selectedFiles[i];
+
+            if (file) {
+                currentTotalSize += file.size;
+            }
+        }
+
+        this.totalSize = currentTotalSize;
         
         this.currentFileIndex = 0;
+        this.sendProgress = 0;
         this.sendNextFile();
     }
 
@@ -35,13 +55,13 @@ export class FileTransfer {
         
         // Önce dosya meta verilerini gönder
         const fileInfo: FileMeta = {
-            fileId: this.currentFileIndex = 0,
+            fileId: this.currentFileIndex,
             name: sendingFile.name,
             type: sendingFile.type,
             size: sendingFile.size,
             lastModified: sendingFile.lastModified,
-            index: this.currentFileIndex,
-            total: this.selectedFiles.length
+            total: this.selectedFiles.length,
+            totalSize: this.totalSize
         };
 
         const fileInfoJson = JSON.stringify({
@@ -55,6 +75,10 @@ export class FileTransfer {
         headerView.setUint16(0, 0x01, true); // 0x01, "file-info" tipini belirtir
 
         const fileInfoBuffer = new Blob([header, new TextEncoder().encode(fileInfoJson)]);
+
+        if (this.isPaused) {
+            return;
+        }
         
         // Meta verileri JSON olarak gönder
         fileInfoBuffer.arrayBuffer().then((buff) => {
@@ -72,9 +96,13 @@ export class FileTransfer {
     // Dosya içeriğini chunk'lar halinde gönder
     async sendFileContent(file: File) {
         return new Promise<void>((resolve) => {
-            const reader = new FileReader();
-            let offset = 0;
-            this.sendProgress = 0;
+            this.currentReader = new FileReader();
+
+            // Bir chunk oku ve gönder
+            const readSlice = (offset: number) => {
+                const slice = file.slice(offset, offset + this.chunkSize);
+                this.currentReader!.readAsArrayBuffer(slice);
+            };
 
             // Başlık (2 byte): Bu verinin file-info olduğunu belirtir
             const header = new ArrayBuffer(6); // 2 byte'lık başlık
@@ -83,14 +111,8 @@ export class FileTransfer {
             headerView.setUint16(0, 0x02, true); // 0x01, "file-info" tipini belirtir
             headerView.setUint32(2, this.currentFileIndex, true); // 2. byte'tan başlatıyoruz
             
-            // Bir chunk oku ve gönder
-            const readSlice = (o: number) => {
-                const slice = file.slice(offset, o + this.chunkSize);
-                reader.readAsArrayBuffer(slice);
-            };
-            
             // Chunk okunduğunda
-            reader.onload = (e) => {
+            this.currentReader.onload = (e) => {
                 if (!e.target?.result) return;
 
                 // Header'ı ve chunk'ı birleştir
@@ -98,31 +120,57 @@ export class FileTransfer {
                 fullBuffer.set(new Uint8Array(header), 0);
                 fullBuffer.set(new Uint8Array(e.target.result as ArrayBuffer), header.byteLength);
                 
+                if (this.isPaused) {
+                    return;
+                }
+
                 // Chunk'ı gönder
                 this.peer?.send(fullBuffer.buffer);
                 
                 // İlerlemeyi hesapla
-                offset += (e.target.result as ArrayBuffer).byteLength;
-                this.sendProgress = Math.min(100, Math.floor((offset / file.size) * 100));
+                this.currentOffset += (e.target.result as ArrayBuffer).byteLength;
+                this.sendProgress = Math.min(100, Math.floor(((this.transferedBytes + this.currentOffset) / this.totalSize) * 100));
                 if (this.callback) this.callback(this.sendProgress);
                 
                 // Daha gönderilecek veri varsa devam et
-                if (offset < file.size) {
-                    readSlice(offset);
+                if (this.currentOffset < file.size) {
+                    readSlice(this.currentOffset);
                 } else {
                     // Bu dosyanın transferi tamamlandı
+                    this.transferedBytes += this.currentOffset;
+                    this.currentOffset = 0;
+                    this.currentReader?.abort();
+
                     resolve();
                 }
             };
             
             // İlk chunk'ı oku
-            readSlice(0);
+            readSlice(this.currentOffset);
         });
+    }
+
+    pause() {
+        this.isPaused = true;
+        if (this.currentReader) {
+            this.currentReader.abort();
+        }
+    }
+
+    resume() {
+        if (!this.isPaused) return;
+        this.isPaused = false;
+
+        if (this.selectedFiles && this.currentFileIndex < this.selectedFiles.length) {
+            const currentFile = this.selectedFiles[this.currentFileIndex];
+            this.sendFileContent(currentFile);
+        }
     }
 }
 
 export class FileReceiver {
     private receivedFiles: Map<number, { meta: FileMeta, chunks: Uint8Array[], totalBytes: number, receivedBytes: number }> = new Map();
+    private totalReceivedBytes: number = 0;
 
     onupdate?: (receiveProgress: number) => void;
     oncomplete?: (file: File) => void;
@@ -178,10 +226,11 @@ export class FileReceiver {
         fileRecord.chunks.push(chunkData);
         fileRecord.receivedBytes += chunkData.length;
 
-        const progress = Math.min(100, Math.floor((fileRecord.receivedBytes / fileRecord.totalBytes) * 100));
+        const progress = Math.min(100, Math.floor(((this.totalReceivedBytes + fileRecord.receivedBytes) / fileRecord.meta.totalSize) * 100));
         if (this.onupdate) this.onupdate(progress);
         
         if (fileRecord.totalBytes === fileRecord.receivedBytes) {
+            this.totalReceivedBytes += fileRecord.receivedBytes;
             this.reconstructFile(fileId);
         }
     }

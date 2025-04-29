@@ -1,5 +1,6 @@
 <script lang="ts">
     import { page } from "$app/state";
+    import { version } from "$lib/version";
 	import "../app.css";
 
 	let { children } = $props();
@@ -49,7 +50,7 @@
 							class="text-black font-medium dark:text-neutral-200 hover:text-blue-600 dark:hover:text-blue-400"
 							href="/changelog"
 						>
-							v0.1.2
+							v{version}
 						</a>
 					</div>
 				</div>
