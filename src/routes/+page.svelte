@@ -1,11 +1,11 @@
 <script lang="ts">
     import Feature from "$lib/components/Feature.svelte";
-    import FileUpload from "$lib/components/FileUpload.svelte";
     import PeerPortImage from "$lib/assets/peerport.png";
 
     import img_private from "$lib/assets/private.svg";
     import img_connection from "$lib/assets/connection.svg";
     import img_questions from "$lib/assets/questions.svg";
+    import FileTransfer from "$lib/components/FileTransfer.svelte";
 </script>
 
 <!-- Announcement Banner -->
@@ -62,7 +62,7 @@
             <!-- End Col -->
 
             <div class="lg:col-span-3 mt-10 lg:mt-0">
-                <FileUpload />
+                <FileTransfer />
             </div>
             <!-- End Col -->
         </div>

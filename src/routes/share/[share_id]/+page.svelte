@@ -1,20 +1,64 @@
 <script lang="ts">
-    import { ConnectionManager } from "$lib/webrtc/connectionManager.js";
-    import { type SignalingMessage } from "$lib/webrtc/signaling";
     import { formatBytes, getSignalingURL } from "$lib/webrtc/utils.js";
     import { fly } from "svelte/transition";
+    import {} from "$lib/webrtc";
+    import { FileTransferApp } from "$lib/FileTransferApp.js";
+    import Toast from "$lib/components/Toast.svelte";
 
     let { data } = $props();
-
-    let connectionManager: ConnectionManager | null;
 
     let receiveProgress = $state(0);
     let isReady = $state(false);
     let isLoading = $state(true);
     let errorMessage = $state("");
     let receivedFiles = $state<File[]>([]);
-
+    
     const url = getSignalingURL();
+
+    const fileTransferApp = new FileTransferApp("online", url);
+
+    fileTransferApp.peerEvents.on("datachannelopen", async (peerId) => {
+        console.log(`[Peer] Data channel opened with ${peerId}`);
+    });
+
+    fileTransferApp.receiverEvents.on("onprogress", (peerId, p) => {
+        receiveProgress = p;
+    })
+
+    fileTransferApp.receiverEvents.on("oncomplete", (peerId, data: File) => {
+        receivedFiles.push(data);
+    })
+
+    fileTransferApp.receiverEvents.on("onerror", (peerId, error) => {
+        errorMessage = error;
+        isLoading = false;
+    })
+
+    fileTransferApp.signalEvents.on("error", (payload) => {
+        errorMessage = payload.message;
+        isLoading = false;
+    })
+    
+    fileTransferApp.signalEvents.on("join", (payload) => {
+        console.log(payload);
+
+        isReady = true;
+        isLoading = false;
+    })
+
+    const startFileTransfer = async () => {
+        await fileTransferApp.ready();
+        
+        isReady = false;
+    };
+
+    $effect(() => {
+        fileTransferApp.connect(data.shareId);
+        
+        return async () => {
+            await fileTransferApp.disconnect()
+        }
+    });
 
     $effect(() => {
         if (errorMessage !== "") {
@@ -23,48 +67,6 @@
             }, 3000);
         }
     });
-
-    const onprogressupdate = (sp: number) => {
-        receiveProgress = sp;
-    };
-
-    const onreceivefile = (file: File) => {
-        receivedFiles.push(file);
-    };
-
-    const onjoin = (message: SignalingMessage) => {
-        isReady = true;
-        isLoading = false;
-    };
-
-    const onerror = (message: SignalingMessage) => {
-        errorMessage = message.payload;
-        isLoading = false;
-    };
-
-    $effect(() => {
-        connectionManager = new ConnectionManager({
-            url: url,
-            role: "receive",
-            room_id: data.room_id,
-        });
-
-        connectionManager.onprogressupdate = onprogressupdate;
-        connectionManager.onreceivefile = onreceivefile;
-        connectionManager.onjoin = onjoin;
-        connectionManager.onerror = onerror;
-
-        connectionManager.connect();
-
-        return () => {
-            connectionManager?.close();
-        };
-    });
-
-    const startFileTransfer = () => {
-        connectionManager?.readyToFileReceive();
-        isReady = false;
-    };
 
     const saveAll = () => {
         receivedFiles.forEach((file) => {
@@ -81,42 +83,12 @@
     }
 </script>
 
-<div class="fixed z-100 right-0 top-0 p-5">
-    <!-- Toast -->
-    <div
-        class="max-w-xs bg-white border border-gray-200 rounded-xl shadow-lg dark:bg-neutral-800 dark:border-neutral-700"
-        role="alert"
-        hidden={errorMessage === ""}
-        tabindex="-1"
-        aria-labelledby="hs-toast-error-example-label"
-    >
-        <div class="flex p-4">
-            <div class="shrink-0">
-                <svg
-                    class="shrink-0 size-4 text-red-500 mt-0.5"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    fill="currentColor"
-                    viewBox="0 0 16 16"
-                >
-                    <path
-                        d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"
-                    ></path>
-                </svg>
-            </div>
-            <div class="ms-3">
-                <p
-                    id="hs-toast-error-example-label"
-                    class="text-sm text-gray-700 dark:text-neutral-400"
-                >
-                    {errorMessage}
-                </p>
-            </div>
-        </div>
-    </div>
-    <!-- End Toast -->
-</div>
+{#if errorMessage}
+    <Toast
+        notifacation={errorMessage}
+        notificationType={"error"}
+    />
+{/if}
 
 <div class="flex max-w-[90rem] px-4 py-10 mx-auto sm:px-6 lg:px-8 lg:py-14 flex-col items-center w-full">
     <div
