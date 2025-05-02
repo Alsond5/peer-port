@@ -11,10 +11,10 @@
     let transferIsStarted = $state(false);
     let shareUrl = $state("");
     let notification = $state("");
+    let isError = $state(false);
     let filesCount = $state(0);
     let totalSize = $state(0);
     let sendProgress = $state(0);
-    let isCompleted = $state(false);
     let fileList: FileList | null = $state(null);
 
     const url = getSignalingURL();
@@ -49,7 +49,6 @@
         totalSize = 0;
         transferIsStarted = false;
         sendProgress = 0;
-        isCompleted = false;
         fileList = null;
     }
 
@@ -96,7 +95,14 @@
             await fileTransferApp.sendFile(peerId, file);
         }
 
-        isCompleted = true;
+        await fileTransferApp.disconnect();
+    })
+
+    fileTransferApp.senderEvents.on("onerror", async (peerId, error) => {
+        resetFileSelections();
+
+        isError = true;
+        notification = error;
     })
 
     $effect(() => {
@@ -117,7 +123,7 @@
 {#if notification}
     <Toast
         notifacation={notification}
-        notificationType={"success"}
+        notificationType={(isError) ? "error" : "success"}
     />
 {/if}
 
