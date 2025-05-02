@@ -79,6 +79,8 @@ export class FileTransferApp {
         });
 
         this.peerManager.on("peerdisconnected", (peerId: string) => {
+            this.peerManager.getSender().stop();
+            
             this.peerEvents.emit("peerdisconnected", peerId);
         });
 
@@ -87,6 +89,8 @@ export class FileTransferApp {
         });
 
         this.peerManager.on("datachannelclose", (peerId: string) => {
+            this.peerManager.getSender().stop();
+            
             this.peerEvents.emit("datachannelclose", peerId);
         });
     }

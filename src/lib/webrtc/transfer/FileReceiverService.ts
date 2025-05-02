@@ -4,6 +4,8 @@ import type { ReceiverEvents } from "../domain/types";
 import type { IReceiver } from "./IReceiver";
 
 export class FileReceiverService extends BaseEventEmitter<ReceiverEvents> implements IReceiver {
+    private HEADER_SIZE = 5;
+
     private receivedFiles: Map<number, { meta: FileMetadata, chunks: ArrayBuffer[], receivedBytes: number }> = new Map();
     
     constructor() {
@@ -12,20 +14,22 @@ export class FileReceiverService extends BaseEventEmitter<ReceiverEvents> implem
 
     receive(peerId: string, event: MessageEvent) {
         const buffer = event.data as ArrayBuffer;
-        if (buffer.byteLength < 6) return;
+        if (buffer.byteLength < this.HEADER_SIZE) return;
 
         const view = new DataView(buffer);
-        const messageType = view.getUint16(0, true);
-        const fileId = view.getUint32(2, true);
+        const messageType = view.getUint8(0);
+        const fileId = view.getUint32(1, true);
+        
+        const chunk = buffer.slice(this.HEADER_SIZE);
 
         if (messageType === 0x01) {
-            this.handleFileInfo(buffer.slice(6), fileId);
+            this.handleFileInfo(chunk, fileId);
         }
         else if (messageType === 0x02) {
-            this.handleFileChunk(peerId, buffer.slice(6), fileId)
+            this.handleFileChunk(peerId, chunk, fileId)
         }
         else if (messageType === 0x03) {
-            const status = new TextDecoder().decode(buffer.slice(6));
+            const status = new TextDecoder().decode(chunk);
             if (status === "DONE") {
                 this.reconstructFile(peerId, fileId);
                 return;

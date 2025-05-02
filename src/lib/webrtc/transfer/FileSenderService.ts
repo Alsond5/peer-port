@@ -3,146 +3,208 @@ import type { FileMetadata } from "../domain/interfaces";
 import type { SenderEvents } from "../domain/types";
 import type { ISender } from "./ISender";
 
-export class FileSenderService extends BaseEventEmitter<SenderEvents> implements ISender {
-    private HEADER_SIZE = 6;
-    private CHUNK_SIZE = 16384;
+class ChunkProducer {
+    private offset = 0;
 
-    private currentFileIndex: number = 0;
-    private offset: number = 0;
-    private reader: FileReader | null = null;
-    private file: File | null = null;
-    private isPaused: boolean = false;
+    onload?: (buffer: ArrayBuffer | null) => void;
+
+    constructor(
+        private file: File,
+        private chunkSize: number
+    ) {}
+
+    async read() {
+        if (!this.onload) return;
+
+        if (this.offset >= this.file.size) {
+            this.onload(new ArrayBuffer());
+
+            return;
+        }
+
+        const slice = this.file.slice(this.offset, this.offset + this.chunkSize);
+        const buffer = await slice.arrayBuffer();
+
+        this.offset += this.chunkSize;
+
+        this.onload(buffer);
+    }
+
+    abort() {
+        if (!this.onload) return;
+
+        this.onload(null);
+    }
+
+    getProgress(): number {
+        return Math.round((this.offset / this.file.size) * 100);
+    }
+    
+    reset() {
+        this.offset = 0;
+    }
+}
+
+export class FileSenderService extends BaseEventEmitter<SenderEvents> implements ISender {
+    private HEADER_SIZE = 5;
+    private CHUNK_SIZE = 64 * 1024;
+
+    private producer: ChunkProducer | null = null;
+
+    private currentFileIndex = 0;
+    private isPaused = false;
 
     constructor() {
         super();
     }
 
     async send(dataChannel: RTCDataChannel, peerId: string, file: File) {
-        this.file = file;
-        this.offset = 0;
+        if (this.producer) return;
+
         this.isPaused = false;
 
-        this.emit("onstart", (peerId));
+        this.sendMetadata(dataChannel, file);
+        this.initFlowController(dataChannel);
 
-        return new Promise<void>((resolve, reject) => {
-            const fileId = this.currentFileIndex;
-            this.reader = new FileReader();
+        this.emit("onstart", peerId);
 
-            this.sendMetadata(dataChannel, file);
-            const { fullBuffer, uint8view } = this.prepareChunkHeader(fileId);
+        const a = await this.estimateRTCSendSpeed(dataChannel);
+        console.log(a)
 
-            const onloadHandler = (e: ProgressEvent<FileReader>) => {
-                if (e.target?.result) {
-                    const chunk = new Uint8Array(e.target.result as ArrayBuffer);
-                    uint8view.set(chunk, this.HEADER_SIZE);
-
-                    const sendSize = this.HEADER_SIZE + chunk.byteLength;
-
-                    dataChannel.send(fullBuffer.slice(0, sendSize));
-                    this.offset += chunk.byteLength;
-
-                    const progress = Math.round((this.offset / file.size) * 100);
-                    this.emit("onprogress", peerId, progress);
-
-                    if (this.offset < file.size) {
-                        !this.isPaused && this.sendNextChunk(file);
-                    } else {
-                        this.sendFinalStatus(dataChannel, peerId, fileId, "DONE")
-                        this.emit("oncomplete", peerId, file.name);
-
-                        this.offset = 0;
-
-                        this.reader!.abort();
-                        this.reader!.onload = null;
-
-                        this.reader = null;
-                        
-                        resolve();
-                    }
-                } else {
-                    this.sendFinalStatus(dataChannel, peerId, fileId, "FAILED");
-                    this.emit("onerror", peerId, "An error occurred while sending the file.")
+        return new Promise<void>(async (resolve, reject) => {
+            this.producer = new ChunkProducer(file, this.CHUNK_SIZE);
+            this.producer!.onload = (buffer) => {
+                if (!buffer) {
+                    this.emit("onerror", peerId, "File transfer cancelled.");
                     reject();
-                }
-            };
 
-            this.reader.onload = onloadHandler;
-            !this.isPaused && this.sendNextChunk(file);
-        })
+                    this.producer!.onload = undefined;
+                    this.producer = null;
+
+                    return;
+                }
+
+                if (buffer.byteLength === 0) {
+                    this.sendFinalStatus(dataChannel, peerId, this.currentFileIndex, "DONE");
+                    this.emit("oncomplete", peerId, file.name);
+
+                    this.currentFileIndex++;
+
+                    this.producer!.onload = undefined;
+                    this.producer = null;
+
+                    resolve();
+                    return;
+                }
+
+                const fullChunk = this.wrapWithHeader(buffer, this.currentFileIndex);
+                dataChannel.send(fullChunk);
+
+                const progress = this.producer!.getProgress();
+                this.emit("onprogress", peerId, progress);
+
+                !this.isPaused && dataChannel.bufferedAmount <= dataChannel.bufferedAmountLowThreshold && this.producer?.read();
+            }
+
+            this.producer.read();
+        });
     }
-    
+
     pause() {
         if (this.isPaused) return;
 
-        console.log("Paused")
-        
         this.isPaused = true;
-        this.reader?.abort();
     }
 
     resume() {
-        if (!this.file || !this.isPaused) return;
+        if (!this.isPaused || !this.producer) return;
 
         this.isPaused = false;
-        this.sendNextChunk(this.file);
+        this.producer.read();
     }
 
-    private sendNextChunk(file: File) {
-        const slice = file.slice(this.offset, this.offset + this.CHUNK_SIZE);
-        this.reader!.readAsArrayBuffer(slice);
+    stop() {
+        if (!this.producer) return;
+        this.producer.abort();
+
+        this.isPaused = true;
     }
 
-    private sendMetadata(dataChannel: RTCDataChannel, file: File) {
-        const metadata = this.createMetadata(file);
+    private async estimateRTCSendSpeed(dataChannel: RTCDataChannel): Promise<number> {
+        return new Promise((resolve) => {
+            const size = 128 * 1024; // 128KB
+            const buffer = new Uint8Array(size).fill(1).buffer;
+            const start = performance.now();
+    
+            const interval = setInterval(() => {
+                if (dataChannel.bufferedAmount < 16384) {
+                    clearInterval(interval);
+                    const elapsed = performance.now() - start;
+                    const kbps = (size / 1024) / (elapsed / 1000); // KB/s
+                    resolve(kbps);
+                }
+            }, 10);
+    
+            dataChannel.send(buffer);
+        });
+    }    
 
-        dataChannel.send(metadata);
+    private initFlowController(dataChannel: RTCDataChannel) {
+        dataChannel.bufferedAmountLowThreshold = 512 * 1024;
+
+        dataChannel.onbufferedamountlow = (ev) => {
+            if (!this.isPaused) {
+                this.producer?.read();
+            }
+        }
     }
 
-    private prepareChunkHeader(fileId: number) {
-        const fullBuffer = new ArrayBuffer(this.HEADER_SIZE + this.CHUNK_SIZE);
-
+    private wrapWithHeader(chunk: ArrayBuffer, fileId: number): ArrayBuffer {
+        const fullBuffer = new ArrayBuffer(this.HEADER_SIZE + chunk.byteLength);
         const view = new DataView(fullBuffer);
         const uint8view = new Uint8Array(fullBuffer);
 
-        view.setUint16(0, 0x02, true);
-        view.setUint32(2, fileId, true);
+        view.setUint8(0, 0x02);
+        view.setUint32(1, fileId, true);
 
-        return { fullBuffer, uint8view }
-    }
-
-    private createMetadata(file: File) {
-        const metadata: FileMetadata = {
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            lastModified: file.lastModified
-        };
-
-        const fileInfoJson = JSON.stringify({ metadata });
-        const fileInfoEncoded = new TextEncoder().encode(fileInfoJson);
-
-        const totalLength = 6 + fileInfoEncoded.byteLength;
-        const fullBuffer = new ArrayBuffer(totalLength);
-        const view = new DataView(fullBuffer);
-        const uint8View = new Uint8Array(fullBuffer);
-
-        view.setUint16(0, 0x01, true);
-        view.setUint32(2, this.currentFileIndex, true);
-
-        uint8View.set(fileInfoEncoded, 6);
+        uint8view.set(new Uint8Array(chunk), this.HEADER_SIZE);
 
         return fullBuffer;
     }
 
-    private sendFinalStatus(dataChannel: RTCDataChannel, peerId: string, fileId: number, status: "DONE" | "FAILED") {
-        const statusText = new TextEncoder().encode(status);
-        const buffer = new ArrayBuffer(this.HEADER_SIZE + statusText.byteLength);
+    private sendMetadata(dataChannel: RTCDataChannel, file: File) {
+        const metadata: FileMetadata = {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            lastModified: file.lastModified,
+        };
+
+        const json = JSON.stringify({ metadata });
+        const encoded = new TextEncoder().encode(json);
+        const buffer = new ArrayBuffer(this.HEADER_SIZE + encoded.byteLength);
+
         const view = new DataView(buffer);
         const uint8view = new Uint8Array(buffer);
 
-        view.setUint16(0, 0x03, true);
-        view.setUint32(2, fileId, true);
-        uint8view.set(statusText, this.HEADER_SIZE);
+        view.setUint8(0, 0x01);
+        view.setUint32(1, this.currentFileIndex, true);
+
+        uint8view.set(encoded, this.HEADER_SIZE);
+
+        dataChannel.send(buffer);
+    }
+
+    private sendFinalStatus(dataChannel: RTCDataChannel, peerId: string, fileId: number, status: "DONE" | "FAILED") {
+        const statusEncoded = new TextEncoder().encode(status);
+        const buffer = new ArrayBuffer(this.HEADER_SIZE + statusEncoded.byteLength);
+        const view = new DataView(buffer);
+        const uint8view = new Uint8Array(buffer);
+
+        view.setUint8(0, 0x03);
+        view.setUint32(1, fileId, true);
+
+        uint8view.set(statusEncoded, this.HEADER_SIZE);
 
         dataChannel.send(buffer);
     }
