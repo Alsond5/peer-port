@@ -25,7 +25,7 @@ class ChunkProducer {
         const slice = this.file.slice(this.offset, this.offset + this.chunkSize);
         const buffer = await slice.arrayBuffer();
 
-        this.offset += this.chunkSize;
+        this.offset += buffer.byteLength;
 
         this.onload(buffer);
     }
@@ -67,9 +67,6 @@ export class FileSenderService extends BaseEventEmitter<SenderEvents> implements
         this.initFlowController(dataChannel);
 
         this.emit("onstart", peerId);
-
-        const a = await this.estimateRTCSendSpeed(dataChannel);
-        console.log(a)
 
         return new Promise<void>(async (resolve, reject) => {
             this.producer = new ChunkProducer(file, this.CHUNK_SIZE);
@@ -129,25 +126,6 @@ export class FileSenderService extends BaseEventEmitter<SenderEvents> implements
 
         this.isPaused = true;
     }
-
-    private async estimateRTCSendSpeed(dataChannel: RTCDataChannel): Promise<number> {
-        return new Promise((resolve) => {
-            const size = 128 * 1024; // 128KB
-            const buffer = new Uint8Array(size).fill(1).buffer;
-            const start = performance.now();
-    
-            const interval = setInterval(() => {
-                if (dataChannel.bufferedAmount < 16384) {
-                    clearInterval(interval);
-                    const elapsed = performance.now() - start;
-                    const kbps = (size / 1024) / (elapsed / 1000); // KB/s
-                    resolve(kbps);
-                }
-            }, 10);
-    
-            dataChannel.send(buffer);
-        });
-    }    
 
     private initFlowController(dataChannel: RTCDataChannel) {
         dataChannel.bufferedAmountLowThreshold = 512 * 1024;

@@ -30,6 +30,7 @@ export class FileReceiverService extends BaseEventEmitter<ReceiverEvents> implem
         }
         else if (messageType === 0x03) {
             const status = new TextDecoder().decode(chunk);
+            
             if (status === "DONE") {
                 this.reconstructFile(peerId, fileId);
                 return;

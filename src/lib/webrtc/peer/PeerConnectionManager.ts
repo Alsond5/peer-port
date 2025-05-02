@@ -115,8 +115,6 @@ export class PeerConnectionManager extends BaseEventEmitter<PeerConnectionEvents
         try {
             const peerConnection = new RTCPeerConnection(this.config);
 
-            console.log(payload.offer)
-
             peerConnection.onicecandidate = (event) => {
                 if (event.candidate) {
                     this.signaling.sendIceCandidate(this.clientId, event.candidate);
@@ -155,8 +153,6 @@ export class PeerConnectionManager extends BaseEventEmitter<PeerConnectionEvents
             const peerConnection = this.peerConnections.get(payload.peer_id);
             if (!peerConnection) return;
 
-            console.log(payload.answer);
-
             await peerConnection.setRemoteDescription(new RTCSessionDescription(payload.answer));
         } catch (error) {
             console.error(`${payload.peer_id} kullanıcısından gelen answer işlenirken hata:`, error);
@@ -167,8 +163,6 @@ export class PeerConnectionManager extends BaseEventEmitter<PeerConnectionEvents
         try {
             const peerConnection = this.peerConnections.get(payload.peer_id);
             if (!peerConnection) return;
-
-            console.log(payload.candidate);
 
             await peerConnection.addIceCandidate(new RTCIceCandidate(payload.candidate));
         } catch (error) {

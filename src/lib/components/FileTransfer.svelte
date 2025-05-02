@@ -42,7 +42,7 @@
     }
 
     function resetFileSelections() {
-        console.log("FileTransfer*")
+        console.log("FileTransfer*");
         isInitFiles = false;
         filesCount = 0;
         shareUrl = "";
@@ -94,8 +94,6 @@
 
             await fileTransferApp.sendFile(peerId, file);
         }
-
-        await fileTransferApp.disconnect();
     })
 
     fileTransferApp.senderEvents.on("onerror", async (peerId, error) => {
