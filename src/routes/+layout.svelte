@@ -8,20 +8,16 @@
 
 <div class="min-h-screen flex flex-col">
 	<header
-		class="sticky top-0 inset-x-0 flex flex-wrap md:justify-start md:flex-nowrap z-50 w-full bg-white border-b border-gray-200 text-sm py-2 dark:bg-neutral-900 dark:border-neutral-700"
+		class="sticky top-0 inset-x-0 flex flex-wrap md:justify-start md:flex-nowrap z-50 w-full bg-white border-b border-gray-200 py-2 dark:bg-neutral-900 dark:border-neutral-700"
 	>
 		<nav
 			class="flex flex-nowrap basis-full items-center w-full lg:max-w-[90rem] mx-auto px-4 md:px-8"
 		>
 			<a
-				class="flex items-center flex-none font-bold text-gray-800 sm:text-lg dark:text-white focus:outline-hidden focus:opacity-80"
+				class="flex items-center flex-none font-black text-gray-700 sm:text-xl mt-1 dark:text-white focus:outline-hidden focus:opacity-80"
 				href="/"
 			>
 				PeerPort
-				<span
-					class="block ml-2 text-xs text-white bg-blue-500 py-1 px-1.5 font-bold rounded h-fit"
-					>BETA</span
-				>
 			</a>
 
 			<div
@@ -30,13 +26,13 @@
 				<div class="flex items-center relative z-10 ms-auto">
 					<div class="lg:ms-1 flex">
 						<a
-							class="inline-flex items-center {page.url.pathname === "/" ? 'text-blue-600! dark:text-blue-500! hover:text-blue-500 dark:hover:text-blue-400' : 'text-gray-800 dark:text-neutral-200 hover:text-blue-600 dark:hover:text-neutral-400'} p-2 text-sm font-medium rounded-lg focus:outline-hidden focus:text-blue-600 dark:focus:text-neutral-400"
+							class="inline-flex items-center {page.url.pathname === "/" ? 'text-blue-600! dark:text-blue-500! hover:text-blue-500 dark:hover:text-blue-400' : 'text-gray-800 dark:text-neutral-200 hover:text-blue-600 dark:hover:text-neutral-400'} p-2 rounded-lg focus:outline-hidden focus:text-blue-600 dark:focus:text-neutral-400"
 							href="/"
 						>
 							Transfer
 						</a>
 						<a
-							class="inline-flex items-center {page.url.pathname === "/faq" ? 'text-blue-600! dark:text-blue-500! hover:text-blue-500 dark:hover:text-blue-400' : 'text-gray-800 dark:text-neutral-200 hover:text-blue-600 dark:hover:text-neutral-400'} p-2 text-sm font-medium rounded-lg focus:outline-hidden focus:text-blue-600 dark:focus:text-neutral-400"
+							class="inline-flex items-center {page.url.pathname === "/faq" ? 'text-blue-600! dark:text-blue-500! hover:text-blue-500 dark:hover:text-blue-400' : 'text-gray-800 dark:text-neutral-200 hover:text-blue-600 dark:hover:text-neutral-400'} p-2 rounded-lg focus:outline-hidden focus:text-blue-600 dark:focus:text-neutral-400"
 							href="/faq"
 						>
 							FAQ
