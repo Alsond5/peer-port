@@ -3,10 +3,17 @@
 
     import Feature from "$lib/components/Feature.svelte";
 
-    import PeerPortImage from "$lib/assets/peerport.png";
+    import PeerPortImage from "$lib/assets/peerport.png?enhanced";
     import img_private from "$lib/assets/private.svg";
     import img_connection from "$lib/assets/connection.svg";
     import img_questions from "$lib/assets/questions.svg";
+
+    import security_img from "$lib/assets/mascot/security.png?enhanced";
+    import no_server_img from "$lib/assets/mascot/no_server.png?enhanced";
+    import unlimited_img from "$lib/assets/mascot/unlimited.png?enhanced";
+    import support_img from "$lib/assets/mascot/support.png?enhanced";
+
+    let { data } = $props();
 
     const brands = import.meta.glob("/src/lib/assets/brands/*.svg", {
         query: "?url",
@@ -14,10 +21,21 @@
     });
 </script>
 
+<svelte:head>
+    <title>{data.meta.title}</title>
+    <meta name="description" content={data.meta.description}>
+
+    <link rel="canonical" href={data.meta.canonicalUrl} />
+    
+    <meta property="og:title" content={data.meta.og_title} />
+    <meta property="og:description" content={data.meta.og_description} />
+    <!-- <meta property="og:image" content="https://example.com/images/share-preview.png" /> -->
+</svelte:head>
+
 <!-- Announcement Banner -->
 <div class="max-w-[90rem] w-full my-3 px-4 sm:px-6 lg:px-8 mx-auto">
     <div
-        class="bg-blue-600 bg-[url('https://preline.co/assets/svg/examples/abstract-1.svg')] bg-no-repeat bg-cover bg-center p-4 rounded-lg text-center"
+        class="bg-blue-600 bg-[url('/src/lib/assets/abstract_bg.svg')] bg-no-repeat bg-cover bg-center p-4 rounded-lg text-center"
     >
         <div class="flex flex-wrap justify-center items-center gap-2">
             <p class="inline-block text-white">PeerPort is open source.</p>
@@ -46,7 +64,7 @@
 
 <!-- Hero -->
 <div
-    class="relative overflow-hidden before:absolute before:top-20 before:start-1/2 before:bg-[url('https://preline.co/assets/svg/examples/squared-bg-element.svg')] dark:before:bg-[url('https://preline.co/assets/svg/examples-dark/squared-bg-element.svg')] before:bg-no-repeat before:bg-top before:size-full before:-z-1 before:transform before:-translate-x-1/2"
+    class="relative overflow-hidden before:absolute before:top-20 before:start-1/2 before:bg-[url('/src/lib/assets/hero_bg.svg')] before:bg-no-repeat before:bg-top before:size-full before:-z-1 before:transform before:-translate-x-1/2"
 >
     <div
         class="flex items-center max-w-[90rem] lg:h-[43rem] mx-auto px-4 sm:px-6 lg:px-8 py-10"
@@ -94,7 +112,7 @@
             <img
                 class="py-3 lg:py-5 w-16 h-auto md:w-20 lg:w-24 mx-auto sm:mx-0"
                 src={path}
-                alt=""
+                alt={path.split("/").at(-1)?.split(".").at(0)}
             />
         {/each}
     </div>
@@ -162,9 +180,9 @@
             href="/features#security"
         >
             <div class="aspect-w-16 aspect-h-10 p-13">
-                <img
+                <enhanced:img
                     class="w-full object-cover rounded-xl"
-                    src="/src/lib/assets/mascot/security.png"
+                    src={security_img}
                     alt="Security"
                 />
             </div>
@@ -200,9 +218,9 @@
             href="/features#serverless"
         >
             <div class="aspect-w-16 aspect-h-10 p-13">
-                <img
+                <enhanced:img
                     class="w-full object-cover rounded-xl"
-                    src="/src/lib/assets/mascot/no_server.png"
+                    src={no_server_img}
                     alt="No Server"
                 />
             </div>
@@ -237,9 +255,9 @@
             href="/features#unlimited"
         >
             <div class="aspect-w-16 aspect-h-10 p-13">
-                <img
+                <enhanced:img
                     class="w-full object-cover rounded-xl"
-                    src="/src/lib/assets/mascot/unlimited.png"
+                    src={unlimited_img}
                     alt="Unlimited"
                 />
             </div>
@@ -289,10 +307,10 @@
                     directly from your device to others, without ever uploading
                     them to a server.
                 </p>
-                <img
+                <enhanced:img
                     class="rounded-xl my-8"
                     src={PeerPortImage}
-                    alt="Features"
+                    alt="PeerPort working logic"
                 />
                 <p class="mt-3 text-gray-800 dark:text-neutral-400">
                     By creating a secure, encrypted connection between devices,
@@ -408,10 +426,10 @@
 <div class="max-w-[90rem] w-full px-4 py-10 sm:px-6 lg:px-8 lg:py-16 mx-auto">
     <div class="grid md:grid-cols-2 gap-8">
         <div class="flex items-center max-w-xs md:max-w-sm mx-auto lg:ml-0 lg:w-2/3 aspect-2/3 p-13">
-            <img
+            <enhanced:img
                 class="w-full object-cover rounded-xl"
-                src="/src/lib/assets/mascot/support.png"
-                alt="Blog"
+                src={support_img}
+                alt="Support"
             />
         </div>
 

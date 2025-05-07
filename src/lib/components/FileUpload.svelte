@@ -33,13 +33,12 @@
     function handleDrop(event: DragEvent) {
         event.preventDefault();
 
+        if (!fileInput) return;
+
         dropzone?.classList.remove("border-blue-500", "bg-blue-100/50");
         dropzone?.classList.add("border-blue-300", "bg-blue-50/30");
 
         if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
-            const fileInput = document.getElementById(
-                "dropzone-file",
-            ) as HTMLInputElement;
             fileInput.files = event.dataTransfer.files;
             handleFileSelect({ target: fileInput } as unknown as Event);
         }

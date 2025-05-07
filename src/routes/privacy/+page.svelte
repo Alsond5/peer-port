@@ -1,3 +1,18 @@
+<script lang="ts">
+    let { data } = $props();
+</script>
+
+<svelte:head>
+    <title>{data.meta.title}</title>
+    <meta name="description" content={data.meta.description}>
+
+    <link rel="canonical" href={data.meta.canonicalUrl} />
+    
+    <meta property="og:title" content={data.meta.og_title} />
+    <meta property="og:description" content={data.meta.og_description} />
+    <!-- <meta property="og:image" content="https://example.com/images/share-preview.png" /> -->
+</svelte:head>
+
 <!-- FAQ -->
 <div class="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
     <!-- Title -->

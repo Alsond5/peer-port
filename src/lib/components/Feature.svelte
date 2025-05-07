@@ -31,7 +31,7 @@
             <img
                 class="max-w-100 w-full h-full aspect-square rounded-xl object-contain"
                 src={image_url}
-                alt="Features"
+                alt="Feature - {title}"
             />
         </div>
         <!-- End Col -->
