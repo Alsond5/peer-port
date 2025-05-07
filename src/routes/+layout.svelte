@@ -14,7 +14,7 @@
 			class="flex flex-nowrap basis-full items-center w-full lg:max-w-[90rem] mx-auto px-4 md:px-8"
 		>
 			<a
-				class="flex items-center flex-none font-black text-gray-700 sm:text-xl mt-1 dark:text-white focus:outline-hidden focus:opacity-80"
+				class="flex items-center flex-none font-black text-gray-700 text-xl mt-1 dark:text-white focus:outline-hidden focus:opacity-80"
 				href="/"
 			>
 				PeerPort

@@ -13,35 +13,30 @@ export class SignalingService extends BaseEventEmitter<SignalingEvents> implemen
     connect(): void {
         if (this.isConnected) return;
 
-        try {
-            this.socket = new WebSocket(this.serverUrl);
+        this.socket = new WebSocket(this.serverUrl);
 
-            this.socket.onmessage = (event) => {
-                const data = JSON.parse(event.data) as SignalingMessage;
-                const type = data.type as keyof SignalingEvents;
+        this.socket.onmessage = (event) => {
+            const data = JSON.parse(event.data) as SignalingMessage;
+            const type = data.type as keyof SignalingEvents;
 
-                this.emit(type, data.payload);
-            };
+            this.emit(type, data.payload);
+        };
 
-            this.socket.onopen = () => {
-                this.isConnected = true;
-                this.emit('connected');
-            };
+        this.socket.onopen = () => {
+            this.isConnected = true;
+            this.emit('connected');
+        };
 
-            this.socket.onclose = () => {
-                this.isConnected = false;
-                this.emit('disconnected', {});
-            };
+        this.socket.onclose = () => {
+            this.isConnected = false;
+            this.emit('disconnected', "Connection closed");
+        };
 
-            this.socket.onerror = () => {
-                this.isConnected = false;
-                this.emit('error', {});
-            };
-
-        } catch (error) {
-            console.error('Signaling sunucusuna bağlanırken hata:', error);
-            this.emit("error", error);
-        }
+        this.socket.onerror = () => {
+            this.disconnect();
+            
+            this.emit('error', "Connection error");
+        };
     }
 
     disconnect(): void {

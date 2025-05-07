@@ -146,7 +146,7 @@
         >
             Why use PeerPort?
         </h2>
-        <p class="mt-1 text-gray-600 dark:text-neutral-400">
+        <p class="mt-3 text-gray-600 dark:text-neutral-400">
             End-to-end encryption, peer-to-peer connection and unlimited
             sharing. We have integrated all these features and many more into
             one single platform for you.
@@ -283,7 +283,7 @@
                 >
                     What is PeerPort?
                 </h2>
-                <p class="mt-18 text-gray-800 dark:text-neutral-400">
+                <p class="mt-3 text-gray-800 dark:text-neutral-400">
                     PeerPort is a peer-to-peer file sharing platform powered by
                     WebRTC technology. It allows you to send files of any size
                     directly from your device to others, without ever uploading
