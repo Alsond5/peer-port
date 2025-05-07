@@ -16,6 +16,7 @@
     let { data } = $props();
 
     const brands = import.meta.glob("/src/lib/assets/brands/*.svg", {
+        eager: true,
         query: "?url",
         import: "default",
     });
@@ -128,10 +129,10 @@
     <!-- End Title -->
 
     <div class="flex justify-center gap-x-6 sm:gap-x-12 lg:gap-x-24">
-        {#each Object.entries(brands) as [path, module]}
+        {#each Object.entries(brands) as [path, url]}
             <img
                 class="py-3 lg:py-5 w-16 h-auto md:w-20 lg:w-24 mx-auto sm:mx-0"
-                src={path}
+                src={url as string}
                 alt={path.split("/").at(-1)?.split(".").at(0)}
             />
         {/each}
