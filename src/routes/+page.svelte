@@ -158,14 +158,14 @@
     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <!-- Card -->
         <a
-            class="group hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 rounded-xl p-5 transition dark:hover:bg-white/10 dark:focus:bg-white/10"
-            href="#"
+            class="feature relative group bg-gray-50 hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 rounded-xl p-5 transition dark:hover:bg-white/10 dark:focus:bg-white/10"
+            href="/features#security"
         >
             <div class="aspect-w-16 aspect-h-10 p-13">
                 <img
                     class="w-full object-cover rounded-xl"
                     src="/src/lib/assets/mascot/security.png"
-                    alt="Blog"
+                    alt="Security"
                 />
             </div>
             <h3
@@ -196,14 +196,14 @@
 
         <!-- Card -->
         <a
-            class="group hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 rounded-xl p-5 transition dark:hover:bg-white/10 dark:focus:bg-white/10"
-            href="#"
+            class="feature relative group bg-gray-50 hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 rounded-xl p-5 transition dark:hover:bg-white/10 dark:focus:bg-white/10"
+            href="/features#serverless"
         >
             <div class="aspect-w-16 aspect-h-10 p-13">
                 <img
                     class="w-full object-cover rounded-xl"
                     src="/src/lib/assets/mascot/no_server.png"
-                    alt="Blog"
+                    alt="No Server"
                 />
             </div>
             <h3
@@ -233,14 +233,14 @@
 
         <!-- Card -->
         <a
-            class="group hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 rounded-xl p-5 transition dark:hover:bg-white/10 dark:focus:bg-white/10"
-            href="#"
+            class="feature relative group bg-gray-50 hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 rounded-xl p-5 transition dark:hover:bg-white/10 dark:focus:bg-white/10"
+            href="/features#unlimited"
         >
             <div class="aspect-w-16 aspect-h-10 p-13">
                 <img
                     class="w-full object-cover rounded-xl"
                     src="/src/lib/assets/mascot/unlimited.png"
-                    alt="Blog"
+                    alt="Unlimited"
                 />
             </div>
             <h3
@@ -279,7 +279,7 @@
         <div class="grid gap-12">
             <div>
                 <h2
-                    class="text-center text-3xl text-slate-700 font-black md:text-6xl dark:text-white"
+                    class="text-center text-3xl text-slate-800 font-black md:text-6xl dark:text-white"
                 >
                     What is PeerPort?
                 </h2>
@@ -295,10 +295,10 @@
                     alt="Features"
                 />
                 <p class="mt-3 text-gray-800 dark:text-neutral-400">
-                    By creating a secure, encrypted connection
-                    between devices, PeerPort ensures that your data stays
-                    private, fast, and truly yours. No storage, no tracking, no
-                    limits — just pure, seamless sharing.
+                    By creating a secure, encrypted connection between devices,
+                    PeerPort ensures that your data stays private, fast, and
+                    truly yours. No storage, no tracking, no limits — just pure,
+                    seamless sharing.
                 </p>
             </div>
 
@@ -403,3 +403,70 @@
     </div>
 </div>
 <!-- End Icon Blocks -->
+
+<!-- Subscribe -->
+<div class="max-w-[90rem] w-full px-4 py-10 sm:px-6 lg:px-8 lg:py-16 mx-auto">
+    <div class="grid md:grid-cols-2 gap-8">
+        <div class="flex items-center max-w-xs md:max-w-sm mx-auto lg:ml-0 lg:w-2/3 aspect-2/3 p-13">
+            <img
+                class="w-full object-cover rounded-xl"
+                src="/src/lib/assets/mascot/support.png"
+                alt="Blog"
+            />
+        </div>
+
+        <form class="flex items-center">
+            <div class="w-full">
+                <div>
+                    <h1
+                        class="block text-3xl font-black text-slate-800 sm:text-4xl lg:text-6xl dark:text-white"
+                    >
+                        Support <span class="text-blue-500">PeerPort</span>
+                    </h1>
+                    <p class="mt-3 text-lg text-gray-800 dark:text-neutral-400">
+                        PeerPort is a nonprofit built for you. No ads, no
+                        trackers, no surveillance. Donating to PeerPort helps
+                        pay for project expenses. Thank you for your support!
+                    </p>
+
+                    <!-- Buttons -->
+                    <div class="mt-7 grid gap-3 w-full sm:inline-flex">
+                        <a
+                            class="py-3 px-4 inline-flex justify-center items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
+                            href="/donate"
+                        >
+                            Donate
+                            <svg
+                                class="shrink-0 size-4"
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                ><path d="m9 18 6-6-6-6" /></svg
+                            >
+                        </a>
+                    </div>
+                    <!-- End Buttons -->
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- End Subscribe -->
+
+<style>
+    .feature::before {
+        content: " ";
+        position: absolute;
+        bottom: 60%;
+        left: 0px;
+        top: 0px;
+        width: 100%;
+        background: linear-gradient(180deg, #ffffff, transparent 70%);
+    }
+</style>
