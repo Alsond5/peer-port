@@ -1,4 +1,6 @@
 <script lang="ts">
+    import bg_shape from "$lib/assets/background_shape.svg?url";
+
     interface Props {
         position: 'left' | 'right';
         image_url: string;
@@ -25,11 +27,11 @@
 <div class="max-w-[90rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
     <!-- Grid -->
     <div class="md:grid md:grid-cols-2 md:items-center md:gap-12 xl:gap-32">
-        <div class="flex items-center justify-center {position === 'right' ? 'md:order-2' : 'md:order-1'} bg-blue-50 rounded-3xl p-10">
+        <div class="image relative flex items-center justify-center bg-no-repeat bg-contain bg-center {position === 'right' ? 'md:order-2' : 'md:order-1'} rounded-3xl p-10" style="background-image: url('/src/lib/assets/background_shape.svg');">
             <img
-                class="rounded-xl max-w-full max-h-full object-contain"
+                class="max-w-100 w-full h-full aspect-square rounded-xl object-contain"
                 src={image_url}
-                alt="Features"
+                alt="Feature - {title}"
             />
         </div>
         <!-- End Col -->
@@ -140,3 +142,15 @@
     <!-- End Grid -->
 </div>
 <!-- End Features -->
+
+<style>
+    .image::after {
+        content: " ";
+        position: absolute;
+        top: 60%;
+        left: 0px;
+        bottom: 0px;
+        width: 100%;
+        background: linear-gradient(180deg, transparent, #ffffff 70%);
+    }
+</style>

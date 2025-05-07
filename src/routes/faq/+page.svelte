@@ -1,3 +1,38 @@
+<script lang="ts">
+    let { data } = $props();
+</script>
+
+<svelte:head>
+    <title>{data.meta.title}</title>
+    <meta name="description" content={data.meta.description}>
+
+    <link rel="canonical" href={data.meta.canonicalUrl} />
+    
+    <meta property="og:title" content={data.meta.og_title} />
+    <meta property="og:description" content={data.meta.og_description} />
+    <meta property="og:url" content={data.meta.og_url} />
+    <meta property="og:type" content={data.meta.og_type} />
+    <meta property="og:image" content={data.meta.og_image} />
+
+    <script type="application/ld+json">
+		{
+		  "@context": "https://schema.org",
+		  "@type": "FAQPage",
+		  "name": "FAQ | PeerPort",
+		  "operatingSystem": "Web",
+		  "applicationCategory": "File Transfer Application",
+		  "description": "PeerPort is a secure, peer-to-peer file sharing application powered by WebRTC. Share files instantly, privately and without servers.",
+		  "keywords": "peer-to-peer file sharing, secure file transfer, private file sharing, encrypted file sharing",
+		  "url": "https://peerport.netlify.app/faq",
+		  "publisher": {
+			"@type": "Organization",
+			"name": "PeerPort",
+			"url": "https://peerport.netlify.app/"
+		  }
+		}
+	</script>
+</svelte:head>
+
 <!-- FAQ -->
 <div class="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
     <!-- Title -->
