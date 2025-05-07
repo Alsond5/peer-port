@@ -8,7 +8,9 @@ export const load: PageLoad = () => {
             canonicalUrl: "https://peerport.netlify.app/",
             og_title: "Secure Peer-to-Peer File Sharing | PeerPort",
             og_description: "Share files instantly with secure, end-to-end encrypted peer-to-peer transfers powered by WebRTC. Fast, private, and serverless.",
-
+            og_url: "https://peerport.netlify.app/",
+            og_type: "website",
+            og_image: "https://peerport.netlify.app/images/preview.png"
         }
     };
 };

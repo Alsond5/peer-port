@@ -6,31 +6,6 @@
 	let { children } = $props();
 </script>
 
-<svelte:head>
-	<script type="application/ld+json">
-		{
-		  "@context": "https://schema.org",
-		  "@type": "SoftwareApplication",
-		  "name": "PeerPort",
-		  "operatingSystem": "Web",
-		  "applicationCategory": "File Transfer Application",
-		  "offers": {
-			"@type": "Offer",
-			"price": "0",
-			"priceCurrency": "USD"
-		  },
-		  "description": "PeerPort is a secure, peer-to-peer file sharing application powered by WebRTC. Share files instantly, privately and without servers.",
-		  "keywords": "peer-to-peer file sharing, secure file transfer, private file sharing, encrypted file sharing",
-		  "url": "https://peerport.netlify.app/",
-		  "publisher": {
-			"@type": "Organization",
-			"name": "PeerPort",
-			"url": "https://peerport.netlify.app/"
-		  }
-		}
-	</script>
-</svelte:head>
-
 <div class="min-h-screen flex flex-col">
 	<header
 		class="sticky top-0 inset-x-0 flex flex-wrap md:justify-start md:flex-nowrap z-50 w-full bg-white border-b border-gray-200 py-2 dark:bg-neutral-900 dark:border-neutral-700"
