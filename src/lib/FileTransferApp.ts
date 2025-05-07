@@ -140,15 +140,16 @@ export class FileTransferApp {
     }
 
     async connect(shareId?: string) {
-        this.signalingService.on("connected", async () => {
+        const connectedHandler = async () => {
             const type = "join";
             const payload = {
                 share_id: shareId,
             }
 
             this.signalingService.send(type, payload);
-        });
-        
+        }
+
+        this.signalingService.on("connected", connectedHandler);
         this.signalingService.connect();
     }
 

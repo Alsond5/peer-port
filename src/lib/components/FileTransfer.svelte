@@ -41,7 +41,7 @@
         fileTransferApp.connect();
     }
 
-    function resetFileSelections() {
+    async function resetFileSelections() {
         console.log("FileTransfer*");
         isInitFiles = false;
         filesCount = 0;
@@ -50,6 +50,8 @@
         transferIsStarted = false;
         sendProgress = 0;
         fileList = null;
+        
+        await fileTransferApp.closeSignalServerConnection();
     }
 
     function pause() {
