@@ -54,7 +54,7 @@
 
     <!-- Privacy Policy Page -->
     <url>
-        <loc>https://peerport.netlify.app/policy</loc>
+        <loc>https://peerport.netlify.app/privacy</loc>
         <lastmod>2025-05-07</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.3</priority>
